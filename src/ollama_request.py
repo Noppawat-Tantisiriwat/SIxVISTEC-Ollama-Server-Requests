@@ -14,6 +14,8 @@ import os.path as op
 
 from tqdm import tqdm
 
+import time
+
 
 from config import read_yaml_config
 
@@ -226,16 +228,104 @@ class OllamaAPIPromptExperiment():
         result_path = self.result_config["path"]
         data_path = self.data_config["path"]
 
-        # --- Load Data with data field ---
+        text_field = self.data_config["text"]
+        label_field = self.data_config["label"]
 
-        
+        # --- Load Data with data field ---
+        if ".json" in data_path:
+
+            with open(data_path, "r") as f:
+
+                testing_data = json.load(f)
+
+            self.test_texts = testing_data[text_field]
+
+            self.test_labels = testing_data[label_field]
+
+
+
+        elif ".csv" in data_path:
+            
+            testing_data = pd.read_csv(data_path)
+
+            self.test_texts = testing_data[text_field].to_numpy()
+
+            self.test_labels = testing_data[label_field].to_numpy()
+
+        elif ".xlsx" in data_path:
+
+            testing_data = pd.read_excel(data_path)
+
+            self.test_texts = testing_data[text_field].to_numpy()
+
+            self.test_labels = testing_data[label_field].to_numpy()
+
+
+        assert len(self.test_texts) == len(self.test_labels)
+
 
         # --- Run Experiment ---
+
+        # Saving dict
+
+        self.result_storage = {}
+
+        # start inference
+        for i, (text, label) in tqdm(enumerate(zip(self.test_texts, self.test_labels)), total=len(self.test_texts)):
+
+            text_result, icd_list, label = self.inference_loop(text, label)
+
+            self.result_storage[i] = {
+        
+                                        "Input" : {
+                                            
+                                            "Record" : text,
+                                            
+                                            "Instruction" : self.instruction,
+                                            
+                                            "Model" : self.model
+                                        },
+                                        
+                                        "Output" : {
+                                            
+                                            "Results" : text_result,
+                                            
+                                            "Evaluate" : {
+                                        
+                                                "True" : label,
+                                            
+                                                "Pred" : icd_list
+                                            },
+                                        }
+                                    }
+            with open(os.path.join(result_path, f"test_result-{self.model.split('/')[0]}_icd_test.json"), "w") as f:
+                json.dump(self.result_storage, f, indent=5)
         
         # --- Load JSON result after experiment is run ---
 
-        with open(result_path, "r") as f:
+        with open(os.path.join(result_path, f"test_result-{self.model.split('/')[0]}_icd_test.json")) as f:
 
             experiment_result = json.load(f)
 
         return experiment_result
+    
+
+    def inference_loop(self, text, label):
+
+        # Get request
+        text_result = get_llm_generation(
+            server=self.server,
+            text=text,
+            model=self.model,
+            instruction=self.instruction
+        )
+
+        # Extract Request
+
+        icd_list = extract_icd_list(text_result)
+
+        
+        return text_result, icd_list, label
+
+
+

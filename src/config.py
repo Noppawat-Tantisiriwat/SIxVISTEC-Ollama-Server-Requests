@@ -47,14 +47,22 @@ def read_yaml_config(config_path:str):
     except:
         print(f"Configuration Error at {config_path}")
 
+    # with open(config_path, "r") as f:
+
+    #     data = yaml.safe_load(f)
+
+    # return data
 
 
 
-if __name__ == "__main__":
+
+
+
+if __name__ == "config":
 
     experiment_config = read_yaml_config("./config/llama3.1_8b_TH.yaml")
 
     print(f"API at server : {experiment_config['server']}")
     print(f"Model : {experiment_config['model']}")
     print(f"Using Data Configuration : {experiment_config['data_config']}")
-    print(f"Using Prompt : {experiment_config['prompt']}")
+    print(f"Using Prompt : ```{experiment_config['prompt']}```")
