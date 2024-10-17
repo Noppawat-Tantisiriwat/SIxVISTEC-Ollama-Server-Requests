@@ -1,2 +1,54 @@
 # ollama-server-requests
 This semi-private repo is for ollama LLM experiment (used under Siriraj VISTEC MOU)
+
+# Script
+
+1. Transfer the dataset to `data`  folder (create subfolder inside `data` is recommended)
+
+
+2. Create YAML configuration consisting of fields as example
+```yaml
+server: "http://localhost:11434/api/generate"
+
+model: "llama3.1:70b"
+
+root: "."
+
+data_config:
+    path: "data/test_data/test_dataset.csv"
+    
+    text: "translate_patient_history_eng"
+
+    label: "target"
+
+result_config:
+    path: "res"
+
+prompt: | 
+    Instructions:
+
+    1. Read the following medical record carefully.
+
+    2. Extract all relevant ICD codes (including ICD-10 for diagnosis and ICD-9 procedural codes for procedures) that correspond to the medical conditions, diagnoses, symptoms, findings, and procedures mentioned in the text.
+
+    3. Ensure patient confidentiality by not including any personally identifiable information in your response.
+
+    4. Output only the list of ICD codes in a single combined list within a JSON object, using the following exact format:
+
+    json
+    Copy code
+    {
+      "ICD": ["Code1", "Code2", "Code3", ..., "CodeN"]
+    }
+    5. Do not include any additional text, explanations, or descriptions. Only provide the JSON output as specified.
+
+    Medical Record:
+```
+
+3. Run experiment using `main.py`
+
+```bash
+python src/main.py --config "llama3.1_70b_TH.yaml"
+```
+
+4. Retrieve the result from `res` folder 
