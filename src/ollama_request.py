@@ -1,11 +1,21 @@
-import requests
+import pandas as pd
+import numpy as np
 import re
-import ast
 import json
 
-from halo import Halo
+import matplotlib.pyplot as plt
+import seaborn as sns
 
-import csv
+import requests
+import ast
+
+import os
+import os.path as op
+
+from tqdm import tqdm
+
+
+from config import read_yaml_config
 
 # -------- Functions --------
 
@@ -107,3 +117,125 @@ def extract_icd_list(text_from_request):
         print(e)
 
         return list()
+
+## Selecting TAG: <output> ... </output>
+
+def reflection_output_extract(full_reflection_output):
+
+    ## tag detection <output> </output>
+    try:
+        output = re.findall(pattern=r"<output>([\S\s]*)$", string=full_reflection_output)
+
+        result_list = extract_icd_list(output[0])
+
+        return result_list
+
+    except Exception as e:
+        
+        print(e)
+
+        return list()
+
+    
+def run_llm_prompt_experiment(
+        data_df: pd.DataFrame,
+        server: str="http://localhost:11434/api/generate",
+        model: str="llama3.1:8b",
+        instruction: str=None,
+        root: str="./",
+        result_path: str="res",
+):
+
+    storage = {}
+
+    for i, row in tqdm(data_df.iterrows(), total=len(data_df)):
+
+        # Get Medical Record
+
+        record = row["translate_patient_history_eng"]
+
+        # Get Label
+
+        label_list = ast.literal_eval(row["target"].replace(" ", ", "))
+
+        # Get Request
+
+        text_result = get_llm_generation(server=server, text=record, model=model, instruction=instruction)
+
+        # Extract Request
+
+        if "reflection" in model:
+
+            reflection_result = reflection_output_extract(text_result)
+            icd_list = extract_icd_list(reflection_result)
+        
+        else:
+
+            icd_list = extract_icd_list(text_result)
+
+
+        # Save Label + Request
+
+        storage[i] = {
+            
+            "Input" : {
+                
+                "Record" : record,
+                
+                "Instruction" : instruction,
+                
+                "Model" : model
+            },
+            
+            "Output" : {
+                
+                "Results" : text_result,
+                
+                "Evaluate" : {
+            
+                    "True" : label_list,
+                
+                    "Pred" : icd_list
+                },
+            }
+        }
+
+        with open(os.path.join(root, result_path, f"test_result-{model.split('/')[0]}_icd_test_Reflection_TH_sample.json"), "w") as f:
+            
+            json.dump(storage, f, indent=5)
+
+    
+    
+class OllamaAPIPromptExperiment():
+
+    def __init__(self, config_path):
+
+        self.config = read_yaml_config(config_path)
+
+        # --- Get Config ---
+
+        self.server = self.config["server"]
+        self.model = self.config["model"]
+        self.root = self.config["root"]
+        self.data_config = self.config["data_config"]
+        self.result_config = self.config["result_config"]
+        self.instruction = self.config["prompt"]
+
+    def run_experiment(self):
+
+        result_path = self.result_config["path"]
+        data_path = self.data_config["path"]
+
+        # --- Load Data with data field ---
+
+        
+
+        # --- Run Experiment ---
+        
+        # --- Load JSON result after experiment is run ---
+
+        with open(result_path, "r") as f:
+
+            experiment_result = json.load(f)
+
+        return experiment_result
