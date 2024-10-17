@@ -10,39 +10,23 @@ This semi-private repo is for ollama LLM experiment (used under Siriraj VISTEC M
 ```yaml
 server: "http://localhost:11434/api/generate"
 
-model: "llama3.1:70b"
+model: "OLLAMA_MODEL"
 
 root: "."
 
 data_config:
-    path: "data/test_data/test_dataset.csv"
+    path: "data/DATA_FOLDER/DATA_FILE"
     
-    text: "translate_patient_history_eng"
+    text: "TEXT"
 
-    label: "target"
+    label: "TARGET"
 
 result_config:
     path: "res"
 
 prompt: | 
-    Instructions:
-
-    1. Read the following medical record carefully.
-
-    2. Extract all relevant ICD codes (including ICD-10 for diagnosis and ICD-9 procedural codes for procedures) that correspond to the medical conditions, diagnoses, symptoms, findings, and procedures mentioned in the text.
-
-    3. Ensure patient confidentiality by not including any personally identifiable information in your response.
-
-    4. Output only the list of ICD codes in a single combined list within a JSON object, using the following exact format:
-
-    json
-    Copy code
-    {
-      "ICD": ["Code1", "Code2", "Code3", ..., "CodeN"]
-    }
-    5. Do not include any additional text, explanations, or descriptions. Only provide the JSON output as specified.
-
-    Medical Record:
+    ...
+    
 ```
 
 3. Run experiment using `main.py`
