@@ -6,6 +6,10 @@ root: "."
 
 data_config:
     path: "data/test_data/test_dataset.csv"
+    
+    text: "translate_patient_history_eng"
+
+    label: "target"
 
 result_config:
     path: "res"
